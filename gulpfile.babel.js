@@ -21,6 +21,7 @@ import babelify from "babelify";
 import minify from "gulp-minify";
 import imagemin from "gulp-imagemin";
 import newer from "gulp-newer";
+import ghPages from "gulp-gh-pages";
 
 
 // routes -----------------------------------------------------------
@@ -157,13 +158,14 @@ const image = () => {
 
 // clean task
 const clean = () => del([dist]);                       // dist 폴더 삭제
+const cleanDeploy = () => del([".publish"]);           // 배포 후 자동 생성된 .publish 폴더 삭제
 
 // webserver task
 const webserver = () => {
   return gulp.src(dist)                                // webserver를 실행 할 폴더 경로
   .pipe(
     ws({                                               // webserver 옵션 설정
-      port: 8300,                                      // 기본 8000, 필요 시 변경 가능
+      // port: 8000,                                   // 기본 8000, 필요 시 변경 가능
       livereload: true,                                // 작업 중 파일 저장 시 브라우저 자동 새로고침 (기본 false)
       open: true                                       // Gulp 실행 시 자동으로 브라우저를 띄우고 localhost 서버 열기 (기본 false)
     })
@@ -224,6 +226,14 @@ const file_management = (watcher_target, src_path, dist_path) => {
   });
 }
 
+// github pages
+const gh = () => {
+  return gulp.src(dist+"/**/*")     // 배포할 파일 경로 (dist 폴더의 모든 파일 및 폴더)
+  .pipe(ghPages(                    // Github 저장소에 배포
+    // { branch: "view-pages" }     // 옵션을 설정하지 않으면 자동으로 gh-pages 브랜치를 생성하고 배포 (브랜치명 변경 시 사용)
+  ));
+}
+
 
 // series & parallel (task 그룹화) ----------------------------------
 
@@ -244,3 +254,7 @@ export const build = gulp.series([ prepare, assets ]);
 
 // gulp dev 실행 (build 실행 후 live 실행) - build 실행 후 live 실행
 export const dev = gulp.series([ build, live ]);
+
+// gulp deploy 실행 (현재 dist 폴더를 배포할 경우 첫째 줄 사용, src를 한 번 더 빌드 하여 배포할 경우 둘째 줄 사용)
+export const deploy = gulp.series([ gh, cleanDeploy ]);
+//export const deploy = gulp.series([ build, gh, cleanDeploy ]);
